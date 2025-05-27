@@ -32,7 +32,7 @@ client = OpenAI(api_key=openai_api_key)
 async_client = AsyncOpenAI(api_key=openai_api_key)
 
 # Constants
-CHUNK_DURATION_MS = 10 * 60 * 1000  # 10 minutes in milliseconds
+CHUNK_DURATION_MS = 3 * 60 * 1000  # 3 minutes in milliseconds
 
 
 async def process_audio_file(file_path: str, transcription_id: str) -> None:

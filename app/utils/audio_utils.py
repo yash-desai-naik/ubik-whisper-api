@@ -33,7 +33,7 @@ def load_audio_file(file_path: str) -> AudioSegment:
         return AudioSegment.from_file(file_path)
 
 
-def split_audio_file(audio: AudioSegment, chunk_duration_ms: int = 10 * 60 * 1000) -> List[Tuple[int, int, str]]:
+def split_audio_file(audio: AudioSegment, chunk_duration_ms: int = 3 * 60 * 1000) -> List[Tuple[int, int, str]]:
     """
     Split an audio file into chunks of specified duration
     Returns a list of tuples (start_time_ms, end_time_ms, chunk_file_path)
@@ -48,10 +48,23 @@ def split_audio_file(audio: AudioSegment, chunk_duration_ms: int = 10 * 60 * 100
         # Extract chunk
         chunk = audio[start_time:end_time]
         
-        # Save chunk to temporary file using WAV format instead of M4A
-        # WAV is more universally supported by ffmpeg
-        chunk_path = tempfile.mktemp(suffix=".wav")
-        chunk.export(chunk_path, format="wav")
+        # Optimize audio for OpenAI API
+        # 1. Convert to mono (1 channel) if it's stereo
+        if chunk.channels > 1:
+            chunk = chunk.set_channels(1)
+            
+        # 2. Downsample to 16kHz (OpenAI recommends this for Whisper)
+        chunk = chunk.set_frame_rate(16000)
+        
+        # 3. Save as MP3 with lower bitrate to reduce file size
+        # MP3 is more compressed than WAV but still well-supported
+        chunk_path = tempfile.mktemp(suffix=".mp3")
+        chunk.export(
+            chunk_path, 
+            format="mp3",
+            bitrate="32k",  # Lower bitrate for smaller file size
+            parameters=["-q:a", "2"]  # Higher quality setting (0-9, lower is better)
+        )
         
         chunks.append((start_time, end_time, chunk_path))
     
